@@ -47,16 +47,29 @@ public class TarLz4Compressor {
     /**
      * Compresses a source path into a Tar Archive using LZ4 compression.  Outputs a .tar.lz4 file to the destination path.
      * The .tar.lz4 file name will be the same as the source directory.
-     * 
+     *
      * @param sourcePath Source path.  Should be the path to the directory to compress.
      * @param destinationPath Destination path.  Should be the path to a directory where the .tar.lz4 will go.
      * @return Path to the output file, else a RuntimeException would have been thrown
      */
     public Path compress(String sourcePath, String destinationPath) {
+        return compress(sourcePath, destinationPath, new File(sourcePath).getName());
+    }
+
+    /**
+     * Compresses a source path into a Tar Archive using LZ4 compression.  Outputs a .tar.lz4 file to the destination path.
+     * The .tar.lz4 file name will be the same as the source directory.
+     * 
+     * @param sourcePath Source path.  Should be the path to the directory to compress.
+     * @param destinationPath Destination path.  Should be the path to a directory where the .tar.lz4 will go.
+     * @param outputFileBaseName Output file base name, excluding the extension
+     * @return Path to the output file, else a RuntimeException would have been thrown
+     */
+    public Path compress(String sourcePath, String destinationPath, String outputFileBaseName) {
         try {
             File sourceFile = new File(sourcePath);
             assert sourceFile.exists() && sourceFile.isDirectory() : "source path [" + sourcePath + "] is not a valid directory";
-            destinationPath += sourceFile.getName();
+            destinationPath += outputFileBaseName + TAR_LZ4_EXTENSION;
             
             // Get our file count
             long fileCount = TarLz4Util.fileCount(Path.of(sourcePath));
@@ -64,7 +77,7 @@ public class TarLz4Compressor {
 
             if (numThreads < 2) {
                 // In the single-threaded case, we simply write directly to the final output file
-                try (FileOutputStream outputFile = new FileOutputStream(destinationPath + TAR_LZ4_EXTENSION)) {
+                try (FileOutputStream outputFile = new FileOutputStream(destinationPath)) {
                     new TarLz4Task(sourcePath, destinationPath, 0, fileCount, 0, 1, this.bufferSize, outputFile).run();
                 }
             } else {
@@ -89,7 +102,7 @@ public class TarLz4Compressor {
                 mergeTmpArchives(destinationPath, futures);
             }
 
-            return Path.of(destinationPath + TAR_LZ4_EXTENSION);
+            return Path.of(destinationPath);
         } catch (Exception e) {
             log.error("Could not lz4 compress source=[" + sourcePath + "] to destination=[" + destinationPath + "]", e);
             throw new RuntimeException(e);
@@ -151,7 +164,7 @@ public class TarLz4Compressor {
 
         // Create an AsynchronousFileChannel for the final output `.tar.lz4` file
         // This channel is has the capability to WRITE to the file, or CREATE it if it doesn't yet exist
-        AsynchronousFileChannel destChannel = AsynchronousFileChannel.open(Path.of(destinationPath + TAR_LZ4_EXTENSION), WRITE, CREATE);
+        AsynchronousFileChannel destChannel = AsynchronousFileChannel.open(Path.of(destinationPath), WRITE, CREATE);
         for (int i = 0; i < numThreads; i++) {
             int finalI = i;
             // Let's again spin up a thread for each .tmp file to write to its slice, or region in the final output file
