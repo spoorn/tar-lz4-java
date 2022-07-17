@@ -6,6 +6,7 @@ import lombok.extern.log4j.Log4j2;
 import org.apache.commons.compress.utils.FileNameUtils;
 import org.spoorn.tarlz4java.core.TarLz4Task;
 import org.spoorn.tarlz4java.util.TarLz4Util;
+import org.spoorn.tarlz4java.util.concurrent.NamedThreadFactory;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -26,6 +27,7 @@ public class TarLz4Compressor {
     
     public static final String TAR_LZ4_EXTENSION = ".tar.lz4";
     private static final String TMP_SUFFIX = ".tmp";
+    private static final String THREAD_NAME = "TarLz4Task";
     
     private final ExecutorService executorService;
     private final int bufferSize;
@@ -35,7 +37,7 @@ public class TarLz4Compressor {
         this.numThreads = numThreads;
         this.bufferSize = bufferSize;
         // We'll submit our runnable tasks using an executor service with `numThreads` threads in the pool
-        this.executorService = Executors.newFixedThreadPool(numThreads);
+        this.executorService = Executors.newFixedThreadPool(numThreads, new NamedThreadFactory(THREAD_NAME));
     }
 
     public TarLz4Compressor(int numThreads, int bufferSize, ExecutorService executorService) {
@@ -102,6 +104,7 @@ public class TarLz4Compressor {
                 mergeTmpArchives(destinationPath, futures);
             }
 
+            log.debug("Finished compressing {} files from source={} to destination={}", fileCount, sourcePath, destinationPath);
             return Path.of(destinationPath);
         } catch (Exception e) {
             log.error("Could not lz4 compress source=[" + sourcePath + "] to destination=[" + destinationPath + "]", e);

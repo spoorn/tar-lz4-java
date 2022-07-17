@@ -4,4 +4,5 @@ open module org.spoorn.tarlz4java {
     requires static lombok;
     requires static org.apache.logging.log4j;
     exports org.spoorn.tarlz4java.api;
+    exports org.spoorn.tarlz4java.util.concurrent;
 }

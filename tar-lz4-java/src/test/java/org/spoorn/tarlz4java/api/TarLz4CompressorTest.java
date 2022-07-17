@@ -5,14 +5,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.spoorn.tarlz4java.api.TarLz4Compressor.TAR_LZ4_EXTENSION;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.spoorn.tarlz4java.util.concurrent.NamedThreadFactory;
 
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.UUID;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class TarLz4CompressorTest {
     
@@ -68,15 +67,7 @@ public class TarLz4CompressorTest {
 
     @Test
     public void small_overall_multiThreaded_customExecutorService() throws Exception {
-        class TestThreadFactory implements ThreadFactory {
-            private final AtomicInteger threadNumber = new AtomicInteger(1);
-            
-            public Thread newThread(Runnable r) {
-                return new Thread(r, "tarlz4-test-" + threadNumber.getAndIncrement());
-            }
-        }
-        
-        TarLz4Compressor compressor = new TarLz4CompressorBuilder().numThreads(6).executorService(Executors.newFixedThreadPool(4, new TestThreadFactory())).build();
+        TarLz4Compressor compressor = new TarLz4CompressorBuilder().numThreads(6).executorService(Executors.newFixedThreadPool(4, new NamedThreadFactory("TarLz4Test"))).build();
         Path outputPath = compressor.compress(test1.getPath(), tmpDir, randomBaseName);
 
         assertEquals(tmpDir + randomBaseName + TAR_LZ4_EXTENSION, outputPath.toString());
