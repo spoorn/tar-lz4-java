@@ -1,6 +1,6 @@
 plugins {
     id 'java'
-    id "io.freefair.lombok" version "6.3.0"
+    id "io.freefair.lombok" version "6.5.0.3"
 }
 
 version = project.version
@@ -11,37 +11,9 @@ repositories {
 }
 
 dependencies {
-
-    //include("org.lz4:lz4-java:${project.lz4_version}")
-    implementation("org.lz4:lz4-java:${project.lz4_version}")
-
-    //include("org.apache.commons:commons-compress:${project.commons_compress_version}")
-    implementation("org.apache.commons:commons-compress:${project.commons_compress_version}")
     
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
-}
-
-def targetJavaVersion = 17
-tasks.withType(JavaCompile).configureEach {
-    // ensure that the encoding is set to UTF-8, no matter what the system default is
-    // this fixes some edge cases with special characters not displaying correctly
-    // see http://yodaconditions.net/blog/fix-for-java-file-encoding-problems-with-gradle.html
-    // If Javadoc is generated, this must be specified in that task too.
-    it.options.encoding = "UTF-8"
-    if (targetJavaVersion >= 10 || JavaVersion.current().isJava10Compatible()) {
-        it.options.release = targetJavaVersion
-    }
-}
-
-java {
-    def javaVersion = JavaVersion.toVersion(targetJavaVersion)
-    if (JavaVersion.current() < javaVersion) {
-        toolchain.languageVersion = JavaLanguageVersion.of(targetJavaVersion)
-    }
-    archivesBaseName = project.archives_base_name
-    // If you remove this line, sources will not be generated.
-    withSourcesJar()
 }
 
 test {

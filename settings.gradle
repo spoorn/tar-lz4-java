@@ -1,2 +1,3 @@
-rootProject.name = 'tar-lz4-java'
+rootProject.name = 'TarLz4Java'
+include 'tar-lz4-java'
 
