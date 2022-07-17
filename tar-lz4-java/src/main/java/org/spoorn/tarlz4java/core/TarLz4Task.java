@@ -47,7 +47,7 @@ public class TarLz4Task implements Runnable {
 
             log.debug("Starting backup for slice {} with start={}, end={}", this.slice, this.start, this.end - 1);
             addFilesToTar(sourcePath, "", taos);
-            log.info("Finished compressed archive for slice {}", this.slice);
+            log.debug("Finished compressed archive for slice {}", this.slice);
 
             taos.finish();
         } catch (IOException e) {
