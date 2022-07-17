@@ -173,7 +173,7 @@ public class TarLz4Compressor {
             // Let's again spin up a thread for each .tmp file to write to its slice, or region in the final output file
             futures[i] = executorService.submit(() -> {
                 try {
-                    log.debug("Writing region for backup slice {}", finalI);
+                    log.debug("Writing output region for slice {}", finalI);
                     String tmpFilePath = destinationPath + "_" + finalI + ".tmp";
 
                     // You can play around with the buffer size to optimize
@@ -199,7 +199,7 @@ public class TarLz4Compressor {
                     tmpChannel.close();
                     tmpFiles[finalI].close();
                     Files.deleteIfExists(Path.of(tmpFilePath));
-                    log.debug("Finished writing region for backup slice {}", finalI);
+                    log.debug("Finished writing output region for slice {}", finalI);
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
