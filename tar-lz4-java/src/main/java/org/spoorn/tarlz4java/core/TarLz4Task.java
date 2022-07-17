@@ -45,7 +45,7 @@ public class TarLz4Task implements Runnable {
         try (LZ4FrameOutputStream outputStream = new LZ4FrameOutputStream(this.fos);
              CustomTarArchiveOutputStream taos = new CustomTarArchiveOutputStream(outputStream, this.slice == this.totalSlices - 1)) {
 
-            log.debug("Starting backup for slice {} with start={}, end={}", this.slice, this.start, this.end - 1);
+            log.debug("Starting compression task for slice {} with start={}, end={}", this.slice, this.start, this.end - 1);
             addFilesToTar(sourcePath, "", taos);
             log.debug("Finished compressed archive for slice {}", this.slice);
 

@@ -3,9 +3,11 @@ package org.spoorn.tarlz4java.api;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.WRITE;
 import lombok.extern.log4j.Log4j2;
+import org.apache.commons.compress.utils.FileNameUtils;
 import org.spoorn.tarlz4java.core.TarLz4Task;
 import org.spoorn.tarlz4java.util.TarLz4Util;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -22,7 +24,7 @@ import java.util.concurrent.Future;
 @Log4j2
 public class TarLz4Compressor {
     
-    private static final String TAR_LZ4_EXTENSION = ".tar.lz4";
+    public static final String TAR_LZ4_EXTENSION = ".tar.lz4";
     private static final String TMP_SUFFIX = ".tmp";
     
     private final ExecutorService executorService;
@@ -44,15 +46,21 @@ public class TarLz4Compressor {
 
     /**
      * Compresses a source path into a Tar Archive using LZ4 compression.  Outputs a .tar.lz4 file to the destination path.
+     * The .tar.lz4 file name will be the same as the source directory.
      * 
-     * @param sourcePath Source path
-     * @param destinationPath Destination path
-     * @return true if succeeded, false otherwise
+     * @param sourcePath Source path.  Should be the path to the directory to compress.
+     * @param destinationPath Destination path.  Should be the path to a directory where the .tar.lz4 will go.
+     * @return Path to the output file, else a RuntimeException would have been thrown
      */
-    public boolean compress(String sourcePath, String destinationPath) {
+    public Path compress(String sourcePath, String destinationPath) {
         try {
+            File sourceFile = new File(sourcePath);
+            assert sourceFile.exists() && sourceFile.isDirectory() : "source path [" + sourcePath + "] is not a valid directory";
+            destinationPath += sourceFile.getName();
+            
             // Get our file count
             long fileCount = TarLz4Util.fileCount(Path.of(sourcePath));
+            log.debug("Compressing {} files from source={} to destination={}", fileCount, sourcePath, destinationPath);
 
             if (numThreads < 2) {
                 // In the single-threaded case, we simply write directly to the final output file
@@ -81,10 +89,10 @@ public class TarLz4Compressor {
                 mergeTmpArchives(destinationPath, futures);
             }
 
-            return true;
+            return Path.of(destinationPath + TAR_LZ4_EXTENSION);
         } catch (Exception e) {
             log.error("Could not lz4 compress source=[" + sourcePath + "] to destination=[" + destinationPath + "]", e);
-            return false;
+            throw new RuntimeException(e);
         }
     }
     
