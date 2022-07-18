@@ -5,6 +5,8 @@ This builds on top of the [lz4-java](https://github.com/lz4/lz4-java) library, p
 
 Also adds multi-threaded support for compression!
 
+Note: This currently only supports Tar Archive + Compressing directories.  Singular files can be done directly through LZ4 without the need for Tar.  Support for single files is TBD
+
 # How to Install
 
 ### Available on Maven Central
