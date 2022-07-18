@@ -64,11 +64,11 @@ public class TarLz4Decompressor {
             destinationPath += sourceBaseName;
 
             log.debug("Decompressing archive from source={} to destination={}", sourcePath, destinationPath);
-            
+
+            TarArchiveEntry entry = null;
             try (FileInputStream fis = new FileInputStream(sourceFile);
                  LZ4FrameInputStream lz4FrameInputStream = new LZ4FrameInputStream(fis);
                  TarArchiveInputStream tais = new TarArchiveInputStream(lz4FrameInputStream)) {
-                TarArchiveEntry entry;
                 
                 long totalBytes = sourceFile.length();
                 long bytesProcessed = 0;
@@ -101,6 +101,11 @@ public class TarLz4Decompressor {
                         }
                     }
                 }
+            } catch (Exception e) {
+                if (entry != null) {
+                    log.error("Error decompressing Tar Archive Entry {}", entry.getName());
+                }
+                throw e;
             }
 
             Path res = Path.of(destinationPath);

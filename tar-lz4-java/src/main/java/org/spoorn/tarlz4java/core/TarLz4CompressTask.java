@@ -88,50 +88,55 @@ public class TarLz4CompressTask implements Runnable {
 
     // Base needed as we are branching off of a child directory, so the initial source will be the virtual "root" of the tar
     private void addFilesToTar(String path, String base, TarArchiveOutputStream taos) throws IOException {
-        File file = new File(path);
+        try {
+            File file = new File(path);
 
-        // If we are out of the bounds of our slice, skip
-        // This could probably be optimized to not have to walk through the entire file tree again.
-        // Instead, we could have cached the exact files each slice should handle.
-        // It's a trade off between using more memory, or more processing steps
-        if (file.isFile() && (count < this.start || count >= this.end)) {
-            count++;
-            return;
-        }
+            // If we are out of the bounds of our slice, skip
+            // This could probably be optimized to not have to walk through the entire file tree again.
+            // Instead, we could have cached the exact files each slice should handle.
+            // It's a trade off between using more memory, or more processing steps
+            if (file.isFile() && (count < this.start || count >= this.end)) {
+                count++;
+                return;
+            }
 
-        String entryName = base + file.getName();
+            String entryName = base + file.getName();
 
-        if (file.isFile()) {
-            // Write file content to archive
-            try (FileInputStream fis = new FileInputStream(file)) {
-                long prevBytesProcessed = this.bytesProcessed;
+            if (file.isFile()) {
+                // Write file content to archive
+                try (FileInputStream fis = new FileInputStream(file)) {
+                    long prevBytesProcessed = this.bytesProcessed;
+                    // Add the Tar Archive Entry
+                    taos.putArchiveEntry(new TarArchiveEntry(file, entryName));
+                    taos.setLongFileMode(TarArchiveOutputStream.LONGFILE_POSIX);
+                    this.bytesProcessed += IOUtils.copy(fis, taos, this.bufferSize);
+                    taos.closeArchiveEntry();
+
+                    // Logging progress for single-thread case
+                    if (shouldLogProgress && this.totalSlices == 1) {
+                        int prevPercent = (int) (prevBytesProcessed * 100 / totalBytes);
+                        int currPercent = (int) ((this.bytesProcessed) * 100 / totalBytes);
+                        int interval = logProgressPercentInterval;
+                        if (prevPercent / interval < currPercent / interval) {
+                            log.info("TarLz4 compression progress: {}%", currPercent);
+                        }
+                    }
+
+                    count++;
+                }
+            } else {
                 // Add the Tar Archive Entry
                 taos.putArchiveEntry(new TarArchiveEntry(file, entryName));
                 taos.setLongFileMode(TarArchiveOutputStream.LONGFILE_POSIX);
-                this.bytesProcessed += IOUtils.copy(fis, taos, this.bufferSize);
                 taos.closeArchiveEntry();
-
-                // Logging progress for single-thread case
-                if (shouldLogProgress && this.totalSlices == 1) {
-                    int prevPercent = (int) (prevBytesProcessed * 100 / totalBytes);
-                    int currPercent = (int) ((this.bytesProcessed) * 100 / totalBytes);
-                    int interval = logProgressPercentInterval;
-                    if (prevPercent / interval < currPercent / interval) {
-                        log.info("TarLz4 compression progress: {}%", currPercent);
-                    }
+                for (File f : file.listFiles()) {
+                    // Recurse on nested files/directories
+                    addFilesToTar(f.getPath(), entryName + File.separator, taos);
                 }
-
-                count++;
             }
-        } else {
-            // Add the Tar Archive Entry
-            taos.putArchiveEntry(new TarArchiveEntry(file, entryName));
-            taos.setLongFileMode(TarArchiveOutputStream.LONGFILE_POSIX);
-            taos.closeArchiveEntry();
-            for (File f : file.listFiles()) {
-                // Recurse on nested files/directories
-                addFilesToTar(f.getPath(), entryName + File.separator, taos);
-            }
+        } catch (Exception e) {
+            log.error("Error while adding file {} to Tar", path);
+            throw e;
         }
     }
 }
