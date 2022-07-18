@@ -22,6 +22,17 @@ public class TarLz4Decompressor {
 
     /**
      * Decompresses/extracts a .tar.lz4 compressed archive.
+     *
+     * @param sourcePath Path to .tar.lz4 file to decompress
+     * @param destinationPath Path to a destination directory to put the extracted files in
+     * @return Path to the destination file/directory that was decompressed
+     */
+    public Path decompress(Path sourcePath, Path destinationPath) {
+        return decompress(sourcePath.toString(), destinationPath.toString());
+    }
+
+    /**
+     * Decompresses/extracts a .tar.lz4 compressed archive.
      * 
      * @param sourcePath Path to .tar.lz4 file to decompress
      * @param destinationPath Path to a destination directory to put the extracted files in

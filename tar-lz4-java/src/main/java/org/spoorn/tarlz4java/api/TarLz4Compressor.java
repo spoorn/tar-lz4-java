@@ -53,6 +53,32 @@ public class TarLz4Compressor {
      * @param destinationPath Destination path.  Should be the path to a directory where the .tar.lz4 will go.
      * @return Path to the output file, else a RuntimeException would have been thrown
      */
+    public Path compress(Path sourcePath, Path destinationPath) {
+        return compress(sourcePath.toString(), destinationPath.toString());
+    }
+
+    /**
+     * Compresses a source path into a Tar Archive using LZ4 compression.  Outputs a .tar.lz4 file to the destination path.
+     * The .tar.lz4 file name will be the same as the source directory.
+     *
+     * @param sourcePath Source path.  Should be the path to the directory to compress.
+     * @param destinationPath Destination path.  Should be the path to a directory where the .tar.lz4 will go.
+     * @param outputFileBaseName Output file base name, excluding the extension.  This wraps the source
+     *                           under a new directory with this base name in the archive.
+     * @return Path to the output file, else a RuntimeException would have been thrown
+     */
+    public Path compress(Path sourcePath, Path destinationPath, String outputFileBaseName) {
+        return compress(sourcePath.toString(), destinationPath.toString(), outputFileBaseName);
+    }
+
+    /**
+     * Compresses a source path into a Tar Archive using LZ4 compression.  Outputs a .tar.lz4 file to the destination path.
+     * The .tar.lz4 file name will be the same as the source directory.
+     *
+     * @param sourcePath Source path.  Should be the path to the directory to compress.
+     * @param destinationPath Destination path.  Should be the path to a directory where the .tar.lz4 will go.
+     * @return Path to the output file, else a RuntimeException would have been thrown
+     */
     public Path compress(String sourcePath, String destinationPath) {
         return compress(sourcePath, destinationPath, new File(sourcePath).getName());
     }
