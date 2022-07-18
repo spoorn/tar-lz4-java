@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.spoorn.tarlz4java.api.TarLz4Compressor.TAR_LZ4_EXTENSION;
 import org.apache.commons.io.FileUtils;
+import org.apache.logging.log4j.Level;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,6 +33,9 @@ public class TarLz4CompressorTest {
         File small = new File(this.getClass().getClassLoader().getResource("small").getFile());
         test1 = Path.of(small.getPath(), "sources", "small_test1_tarlz4").toFile();
         this.resourcesCreated = new ArrayList<>();
+        // The log4j2.xml file should already have set everything to debug, but this is a sanity check to make sure
+        // the method works fine
+        TarLz4Compressor.setGlobalLogLevel(Level.DEBUG);
     }
     
     @Test

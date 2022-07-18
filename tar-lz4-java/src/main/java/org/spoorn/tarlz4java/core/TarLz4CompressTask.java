@@ -6,6 +6,8 @@ import net.jpountz.lz4.LZ4FrameOutputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.apache.commons.compress.utils.IOUtils;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.config.Configurator;
 import org.spoorn.tarlz4java.io.CustomTarArchiveOutputStream;
 
 import java.io.File;
@@ -49,6 +51,16 @@ public class TarLz4CompressTask implements Runnable {
         this.end = end;
         this.count = 0;
         this.bytesProcessed = 0;
+    }
+
+    /**
+     * Allows setting the global log level for TarLz4CompressTask instances.
+     * Note: you should be calling TarLz4Compressor's setGlobalLogLevel: <code>TarLz4Compressor.setGlobalLogLevel(Level.DEBUG);</code>
+     *
+     * @param level Log level to set to
+     */
+    public static void setGlobalLogLevel(Level level) {
+        Configurator.setLevel(log.getName(), level);
     }
 
     @Override

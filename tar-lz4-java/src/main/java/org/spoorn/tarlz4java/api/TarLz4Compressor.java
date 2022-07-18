@@ -3,6 +3,8 @@ package org.spoorn.tarlz4java.api;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.WRITE;
 import lombok.extern.log4j.Log4j2;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.config.Configurator;
 import org.spoorn.tarlz4java.core.TarLz4CompressTask;
 import org.spoorn.tarlz4java.util.TarLz4Util;
 import org.spoorn.tarlz4java.util.concurrent.NamedThreadFactory;
@@ -27,7 +29,7 @@ public class TarLz4Compressor {
     public static final String TAR_LZ4_EXTENSION = ".tar.lz4";
     private static final String TMP_SUFFIX = ".tmp";
     private static final String THREAD_NAME = "TarLz4CompressTask";
-    
+
     private final ExecutorService executorService;
     private final int bufferSize;
     private final int numThreads;
@@ -45,6 +47,17 @@ public class TarLz4Compressor {
         this.executorService = executorService;
         this.shouldLogProgress = shouldLogProgress;
         this.logProgressPercentInterval = logProgressPercentInterval;
+    }
+
+    /**
+     * Allows setting the global log level for TarLz4Compressor instances.
+     * This is useful for enabling debug logs by calling <code>TarLz4Compressor.setGlobalLogLevel(Level.DEBUG);</code>
+     * 
+     * @param level Log level to set to
+     */
+    public static void setGlobalLogLevel(Level level) {
+        Configurator.setLevel(log.getName(), level);
+        TarLz4CompressTask.setGlobalLogLevel(level);
     }
 
     /**
