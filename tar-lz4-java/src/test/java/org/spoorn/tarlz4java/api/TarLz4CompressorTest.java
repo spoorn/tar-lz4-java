@@ -49,7 +49,7 @@ public class TarLz4CompressorTest {
         File outputFile = outputPath.toFile();
         assertTrue(outputFile.isFile());
         
-        TarLz4Decompressor decompressor = new TarLz4DecompressorBuilder().build();
+        TarLz4Decompressor decompressor = new TarLz4DecompressorBuilder().shouldLogProgress(true).build();
         Path decompressedPath = decompressor.decompress(outputFile.getPath(), tmpDir);
         resourcesCreated.add(decompressedPath);
         assertTrue(TarLz4Util.checkDirsAreEqual(test1.toPath(), decompressedPath.resolve(test1.getName())));
@@ -66,7 +66,7 @@ public class TarLz4CompressorTest {
         File outputFile = outputPath.toFile();
         assertTrue(outputFile.isFile());
         
-        TarLz4Decompressor decompressor = new TarLz4DecompressorBuilder().build();
+        TarLz4Decompressor decompressor = new TarLz4DecompressorBuilder().shouldLogProgress(true).build();
         Path decompressedPath = decompressor.decompress(outputFile.getPath(), tmpDir);
         resourcesCreated.add(decompressedPath);
         assertTrue(TarLz4Util.checkDirsAreEqual(test1.toPath(), decompressedPath.resolve(test1.getName())));
@@ -83,7 +83,7 @@ public class TarLz4CompressorTest {
         File outputFile = outputPath.toFile();
         assertTrue(outputFile.isFile());
         
-        TarLz4Decompressor decompressor = new TarLz4DecompressorBuilder().build();
+        TarLz4Decompressor decompressor = new TarLz4DecompressorBuilder().shouldLogProgress(true).build();
         Path decompressedPath = decompressor.decompress(outputFile.getPath(), tmpDir);
         resourcesCreated.add(decompressedPath);
         assertTrue(TarLz4Util.checkDirsAreEqual(test1.toPath(), decompressedPath.resolve(test1.getName())));
@@ -101,7 +101,7 @@ public class TarLz4CompressorTest {
         File outputFile = outputPath.toFile();
         assertTrue(outputFile.isFile());
 
-        TarLz4Decompressor decompressor = new TarLz4DecompressorBuilder().build();
+        TarLz4Decompressor decompressor = new TarLz4DecompressorBuilder().shouldLogProgress(true).build();
         Path decompressedPath = decompressor.decompress(outputFile.getPath(), tmpDir);
         resourcesCreated.add(decompressedPath);
         assertTrue(TarLz4Util.checkDirsAreEqual(test1.toPath(), decompressedPath.resolve(test1.getName())));

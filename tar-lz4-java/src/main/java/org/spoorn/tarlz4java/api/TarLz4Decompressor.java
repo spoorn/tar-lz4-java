@@ -5,6 +5,8 @@ import lombok.extern.log4j.Log4j2;
 import net.jpountz.lz4.LZ4FrameInputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.config.Configurator;
 import org.spoorn.tarlz4java.util.TarLz4Util;
 
 import java.io.File;
@@ -15,9 +17,23 @@ import java.nio.file.Path;
 
 @Log4j2
 public class TarLz4Decompressor {
+
+    private final boolean shouldLogProgress;
+    private final int logProgressPercentInterval;
     
-    public TarLz4Decompressor() {
-        
+    public TarLz4Decompressor(boolean shouldLogProgress, int logProgressPercentInterval) {
+        this.shouldLogProgress = shouldLogProgress;
+        this.logProgressPercentInterval = logProgressPercentInterval;
+    }
+
+    /**
+     * Allows setting the global log level for TarLz4Decompressor instances.
+     * This is useful for enabling debug logs by calling <code>TarLz4Decompressor.setGlobalLogLevel(Level.DEBUG);</code>
+     *
+     * @param level Log level to set to
+     */
+    public static void setGlobalLogLevel(Level level) {
+        Configurator.setLevel(log.getName(), level);
     }
 
     /**
@@ -54,6 +70,9 @@ public class TarLz4Decompressor {
                  TarArchiveInputStream tais = new TarArchiveInputStream(lz4FrameInputStream)) {
                 TarArchiveEntry entry;
                 
+                long totalBytes = sourceFile.length();
+                long bytesProcessed = 0;
+                
                 while ((entry = tais.getNextTarEntry()) != null) {
                     Path dest = Path.of(destinationPath, entry.getName());
                     
@@ -65,6 +84,17 @@ public class TarLz4Decompressor {
                             int read = 0;
                             while (read < entry.getSize()) {
                                 read += tais.read(content, read, content.length - read);
+                            }
+                            
+                            if (this.shouldLogProgress) {
+                                long prevBytesProcessed = bytesProcessed;
+                                bytesProcessed += read;
+                                int prevPercent = Math.min((int) (prevBytesProcessed * 100 / totalBytes), 100);
+                                int currPercent = Math.min((int) ((bytesProcessed) * 100 / totalBytes), 100);
+                                int interval = logProgressPercentInterval;
+                                if (prevPercent / interval < currPercent / interval) {
+                                    log.info("TarLz4 decompression progress: {}%", currPercent);
+                                }
                             }
 
                             fos.write(content);
