@@ -1,4 +1,4 @@
-open module org.spoorn.tarlz4java {
+module org.spoorn.tarlz4java {
     requires static org.lz4.java;
     requires static org.apache.commons.compress;
     requires static lombok;
