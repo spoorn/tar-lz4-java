@@ -1,5 +1,7 @@
 package org.spoorn.tarlz4java.api;
 
+import org.spoorn.tarlz4java.logging.Verbosity;
+
 /**
  * Convenience builder to create a {@link TarLz4Decompressor}.
  */
@@ -7,6 +9,7 @@ public class TarLz4DecompressorBuilder {
     
     private boolean shouldLogProgress = false;
     private int logProgressPercentInterval = 10;
+    private Verbosity verbosity = Verbosity.WARN;
     
     public TarLz4DecompressorBuilder() {
         
@@ -35,8 +38,19 @@ public class TarLz4DecompressorBuilder {
         this.logProgressPercentInterval = logProgressPercentInterval;
         return this;
     }
+
+    /**
+     * Sets the verbosity level.  See {@link Verbosity} for documentation.
+     *
+     * @param verbosity Verbosity level
+     * @return TarLz4DecompressorBuilder
+     */
+    public TarLz4DecompressorBuilder verbosity(Verbosity verbosity) {
+        this.verbosity = verbosity;
+        return this;
+    }
     
     public TarLz4Decompressor build() {
-        return new TarLz4Decompressor(shouldLogProgress, logProgressPercentInterval);
+        return new TarLz4Decompressor(shouldLogProgress, logProgressPercentInterval, verbosity);
     }
 }

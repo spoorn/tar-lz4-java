@@ -1,5 +1,7 @@
 package org.spoorn.tarlz4java.api;
 
+import org.spoorn.tarlz4java.logging.Verbosity;
+
 import java.util.concurrent.ExecutorService;
 
 /**
@@ -12,6 +14,7 @@ public class TarLz4CompressorBuilder {
     private int numThreads = 1;
     private boolean shouldLogProgress = false;
     private int logProgressPercentInterval = 10;
+    private Verbosity verbosity = Verbosity.WARN;
     
     public TarLz4CompressorBuilder() {
         
@@ -73,14 +76,25 @@ public class TarLz4CompressorBuilder {
     }
 
     /**
+     * Sets the verbosity level.  See {@link Verbosity} for documentation.
+     *
+     * @param verbosity Verbosity level
+     * @return TarLz4CompressorBuilder
+     */
+    public TarLz4CompressorBuilder verbosity(Verbosity verbosity) {
+        this.verbosity = verbosity;
+        return this;
+    }
+
+    /**
      * Builds the TarLz4Compressor using parameters.
      * 
      * @return A ready TarLz4Compressor
      */
     public TarLz4Compressor build() {
         if (this.executorService == null) {
-            return new TarLz4Compressor(numThreads, bufferSize, shouldLogProgress, logProgressPercentInterval);
+            return new TarLz4Compressor(numThreads, bufferSize, shouldLogProgress, logProgressPercentInterval, verbosity);
         }
-        return new TarLz4Compressor(numThreads, bufferSize, shouldLogProgress, logProgressPercentInterval, executorService);
+        return new TarLz4Compressor(numThreads, bufferSize, shouldLogProgress, logProgressPercentInterval, verbosity, executorService);
     }
 }

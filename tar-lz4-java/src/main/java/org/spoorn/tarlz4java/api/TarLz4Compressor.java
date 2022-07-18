@@ -2,13 +2,10 @@ package org.spoorn.tarlz4java.api;
 
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.WRITE;
-import lombok.extern.log4j.Log4j2;
-import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.core.LoggerContext;
-import org.apache.logging.log4j.core.config.Configuration;
-import org.apache.logging.log4j.core.config.LoggerConfig;
+import org.apache.logging.log4j.Logger;
 import org.spoorn.tarlz4java.core.TarLz4CompressTask;
+import org.spoorn.tarlz4java.logging.TarLz4Logger;
+import org.spoorn.tarlz4java.logging.Verbosity;
 import org.spoorn.tarlz4java.util.TarLz4Util;
 import org.spoorn.tarlz4java.util.concurrent.NamedThreadFactory;
 
@@ -26,45 +23,34 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-@Log4j2
 public class TarLz4Compressor {
     
     public static final String TAR_LZ4_EXTENSION = ".tar.lz4";
     private static final String TMP_SUFFIX = ".tmp";
     private static final String THREAD_NAME = "TarLz4CompressTask";
+    private static final Logger logger = org.apache.logging.log4j.LogManager.getLogger(TarLz4Compressor.class);
 
     private final ExecutorService executorService;
     private final int bufferSize;
     private final int numThreads;
     private final boolean shouldLogProgress;
     private final int logProgressPercentInterval;
+    private final Verbosity verbosity;
+    private final TarLz4Logger log;
     
-    public TarLz4Compressor(int numThreads, int bufferSize, boolean shouldLogProgress, int logProgressPercentInterval) {
+    public TarLz4Compressor(int numThreads, int bufferSize, boolean shouldLogProgress, int logProgressPercentInterval, Verbosity verbosity) {
         // We'll submit our runnable tasks using an executor service with `numThreads` threads in the pool
-       this(numThreads, bufferSize, shouldLogProgress, logProgressPercentInterval, Executors.newFixedThreadPool(numThreads, new NamedThreadFactory(THREAD_NAME)));
+       this(numThreads, bufferSize, shouldLogProgress, logProgressPercentInterval, verbosity, Executors.newFixedThreadPool(numThreads, new NamedThreadFactory(THREAD_NAME)));
     }
 
-    public TarLz4Compressor(int numThreads, int bufferSize, boolean shouldLogProgress, int logProgressPercentInterval, ExecutorService executorService) {
+    public TarLz4Compressor(int numThreads, int bufferSize, boolean shouldLogProgress, int logProgressPercentInterval, Verbosity verbosity, ExecutorService executorService) {
         this.numThreads = numThreads;
         this.bufferSize = bufferSize;
         this.executorService = executorService;
         this.shouldLogProgress = shouldLogProgress;
         this.logProgressPercentInterval = logProgressPercentInterval;
-    }
-
-    /**
-     * Allows setting the global log level for TarLz4Compressor instances.
-     * This is useful for enabling debug logs by calling <code>TarLz4Compressor.setGlobalLogLevel(Level.DEBUG);</code>
-     * 
-     * @param level Log level to set to
-     */
-    public static void setGlobalLogLevel(Level level) {
-        LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
-        Configuration config = ctx.getConfiguration();
-        LoggerConfig loggerConfig = config.getLoggerConfig(LogManager.getLogger(TarLz4Compressor.class).getName());
-        loggerConfig.setLevel(level);
-        ctx.updateLoggers();
-        TarLz4CompressTask.setGlobalLogLevel(level);
+        this.verbosity = verbosity;
+        this.log = new TarLz4Logger(logger, this.verbosity);
     }
 
     /**
@@ -129,7 +115,8 @@ public class TarLz4Compressor {
                 // In the single-threaded case, we simply write directly to the final output file
                 try (FileOutputStream outputFile = new FileOutputStream(destinationPath)) {
                     new TarLz4CompressTask(sourcePath, destinationPath, 0, fileCount, 0, 1, 
-                            this.bufferSize, TarLz4Util.getDirectorySize(sourceFile.toPath()), shouldLogProgress, logProgressPercentInterval, outputFile).run();
+                            this.bufferSize, TarLz4Util.getDirectorySize(sourceFile.toPath()), 
+                            shouldLogProgress, logProgressPercentInterval, verbosity, outputFile).run();
                 }
             } else {
                 // Reuse futures array
@@ -190,7 +177,7 @@ public class TarLz4Compressor {
                 FileOutputStream tmpOutputFile = new FileOutputStream(destinationPath + "_" + i + TMP_SUFFIX);
 
                 TarLz4CompressTask runnable = new TarLz4CompressTask(sourcePath, destinationPath, start, end, i, numThreads,
-                        bufferSize, totalBytes, false, logProgressPercentInterval, tmpOutputFile);
+                        bufferSize, totalBytes, false, logProgressPercentInterval, verbosity, tmpOutputFile);
 
                 // Save a reference to each Thread Future, and the Runnable, so we can properly close() or clean them up later
                 futures[i] = executorService.submit(runnable);

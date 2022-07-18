@@ -1,26 +1,23 @@
 package org.spoorn.tarlz4java.core;
 
 import lombok.Getter;
-import lombok.extern.log4j.Log4j2;
 import net.jpountz.lz4.LZ4FrameOutputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.apache.commons.compress.utils.IOUtils;
-import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.core.LoggerContext;
-import org.apache.logging.log4j.core.config.Configuration;
-import org.apache.logging.log4j.core.config.LoggerConfig;
+import org.apache.logging.log4j.Logger;
 import org.spoorn.tarlz4java.io.CustomTarArchiveOutputStream;
+import org.spoorn.tarlz4java.logging.TarLz4Logger;
+import org.spoorn.tarlz4java.logging.Verbosity;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
-@Log4j2
 public class TarLz4CompressTask implements Runnable {
 
+    private static final Logger logger = org.apache.logging.log4j.LogManager.getLogger(TarLz4CompressTask.class);
     private final String sourcePath;  // target input path
     private final String destinationPath;  // destination output file i.e. the temporary file this thread will write to
     private final int slice;  // The slice we are looking at, indexed at 0
@@ -29,6 +26,7 @@ public class TarLz4CompressTask implements Runnable {
     private final long totalBytes; // Total number of bytes in the sourcePath, for logging progress purposes
     private final boolean shouldLogProgress;  // True to log progress via a Logger, else false
     private final int logProgressPercentInterval;  // Percentage interval to log progress
+    private final Verbosity verbosity;  // logging verbosity
     public final FileOutputStream fos;  // Output Stream to the file output for this task
 
     private final long start;    // inclusive
@@ -36,10 +34,11 @@ public class TarLz4CompressTask implements Runnable {
     private int count;  // Current file number this task is processing
     @Getter
     private long bytesProcessed;
+    private final TarLz4Logger log;
 
     public TarLz4CompressTask(String sourcePath, String destinationPath, long start, long end, int slice,
                               int totalSlices, int bufferSize, long totalBytes, boolean shouldLogProgress, 
-                              int logProgressPercentInterval, FileOutputStream fos) {
+                              int logProgressPercentInterval, Verbosity verbosity, FileOutputStream fos) {
         this.sourcePath = sourcePath;
         this.destinationPath = destinationPath;
         this.slice = slice;
@@ -48,26 +47,14 @@ public class TarLz4CompressTask implements Runnable {
         this.totalBytes = totalBytes;
         this.shouldLogProgress = shouldLogProgress;
         this.logProgressPercentInterval = logProgressPercentInterval;
+        this.verbosity = verbosity;
         this.fos = fos;
 
         this.start = start;
         this.end = end;
         this.count = 0;
         this.bytesProcessed = 0;
-    }
-
-    /**
-     * Allows setting the global log level for TarLz4CompressTask instances.
-     * Note: you should be calling TarLz4Compressor's setGlobalLogLevel: <code>TarLz4Compressor.setGlobalLogLevel(Level.DEBUG);</code>
-     *
-     * @param level Log level to set to
-     */
-    public static void setGlobalLogLevel(Level level) {
-        LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
-        Configuration config = ctx.getConfiguration();
-        LoggerConfig loggerConfig = config.getLoggerConfig(LogManager.getLogger(TarLz4CompressTask.class).getName());
-        loggerConfig.setLevel(level);
-        ctx.updateLoggers();
+        this.log = new TarLz4Logger(logger, verbosity);
     }
 
     @Override

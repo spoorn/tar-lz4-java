@@ -1,12 +1,12 @@
 package org.spoorn.tarlz4java.api;
 
 import static org.spoorn.tarlz4java.api.TarLz4Compressor.TAR_LZ4_EXTENSION;
-import lombok.extern.log4j.Log4j2;
 import net.jpountz.lz4.LZ4FrameInputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
-import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.core.config.Configurator;
+import org.apache.logging.log4j.Logger;
+import org.spoorn.tarlz4java.logging.TarLz4Logger;
+import org.spoorn.tarlz4java.logging.Verbosity;
 import org.spoorn.tarlz4java.util.TarLz4Util;
 
 import java.io.File;
@@ -15,25 +15,19 @@ import java.io.FileOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-@Log4j2
 public class TarLz4Decompressor {
 
+    private static final Logger logger = org.apache.logging.log4j.LogManager.getLogger(TarLz4Decompressor.class);
     private final boolean shouldLogProgress;
     private final int logProgressPercentInterval;
+    private final Verbosity verbosity;
+    private final TarLz4Logger log;
     
-    public TarLz4Decompressor(boolean shouldLogProgress, int logProgressPercentInterval) {
+    public TarLz4Decompressor(boolean shouldLogProgress, int logProgressPercentInterval, Verbosity verbosity) {
         this.shouldLogProgress = shouldLogProgress;
         this.logProgressPercentInterval = logProgressPercentInterval;
-    }
-
-    /**
-     * Allows setting the global log level for TarLz4Decompressor instances.
-     * This is useful for enabling debug logs by calling <code>TarLz4Decompressor.setGlobalLogLevel(Level.DEBUG);</code>
-     *
-     * @param level Log level to set to
-     */
-    public static void setGlobalLogLevel(Level level) {
-        Configurator.setLevel(log.getName(), level);
+        this.verbosity = verbosity;
+        this.log = new TarLz4Logger(logger, verbosity);
     }
 
     /**
