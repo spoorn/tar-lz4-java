@@ -7,7 +7,10 @@ import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.apache.commons.compress.utils.IOUtils;
 import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.core.config.Configurator;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.config.Configuration;
+import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.spoorn.tarlz4java.io.CustomTarArchiveOutputStream;
 
 import java.io.File;
@@ -60,7 +63,11 @@ public class TarLz4CompressTask implements Runnable {
      * @param level Log level to set to
      */
     public static void setGlobalLogLevel(Level level) {
-        Configurator.setLevel(log.getName(), level);
+        LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
+        Configuration config = ctx.getConfiguration();
+        LoggerConfig loggerConfig = config.getLoggerConfig(LogManager.getLogger(TarLz4CompressTask.class).getName());
+        loggerConfig.setLevel(level);
+        ctx.updateLoggers();
     }
 
     @Override

@@ -4,7 +4,10 @@ import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.WRITE;
 import lombok.extern.log4j.Log4j2;
 import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.core.config.Configurator;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.config.Configuration;
+import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.spoorn.tarlz4java.core.TarLz4CompressTask;
 import org.spoorn.tarlz4java.util.TarLz4Util;
 import org.spoorn.tarlz4java.util.concurrent.NamedThreadFactory;
@@ -56,7 +59,11 @@ public class TarLz4Compressor {
      * @param level Log level to set to
      */
     public static void setGlobalLogLevel(Level level) {
-        Configurator.setLevel(log.getName(), level);
+        LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
+        Configuration config = ctx.getConfiguration();
+        LoggerConfig loggerConfig = config.getLoggerConfig(LogManager.getLogger(TarLz4Compressor.class).getName());
+        loggerConfig.setLevel(level);
+        ctx.updateLoggers();
         TarLz4CompressTask.setGlobalLogLevel(level);
     }
 
