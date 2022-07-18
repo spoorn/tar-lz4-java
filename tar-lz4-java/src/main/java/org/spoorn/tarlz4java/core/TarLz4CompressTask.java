@@ -105,8 +105,8 @@ public class TarLz4CompressTask implements Runnable {
 
                         // Logging progress for single-thread case
                         if (shouldLogProgress && this.totalSlices == 1) {
-                            int prevPercent = (int) (prevBytesProcessed * 100 / totalBytes);
-                            int currPercent = (int) ((this.bytesProcessed) * 100 / totalBytes);
+                            long prevPercent = prevBytesProcessed * 100 / totalBytes;
+                            long currPercent = this.bytesProcessed * 100 / totalBytes;
                             int interval = logProgressPercentInterval;
                             if (prevPercent / interval < currPercent / interval) {
                                 log.info("TarLz4 compression progress: {}%", currPercent);

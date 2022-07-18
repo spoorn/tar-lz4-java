@@ -115,6 +115,7 @@ public class TarLz4Compressor {
     public Path compress(String sourcePath, String destinationPath, String outputFileBaseName) {
         try {
             File sourceFile = new File(sourcePath);
+            // TODO: If destination path does not exist, but is a directory, create the path
             assert sourceFile.exists() && sourceFile.isDirectory() : "source path [" + sourcePath + "] is not a valid directory";
             destinationPath = Path.of(destinationPath, outputFileBaseName + TAR_LZ4_EXTENSION).toString();
             
@@ -197,8 +198,8 @@ public class TarLz4Compressor {
 
             // Logging progress for multithreaded case, also waits for future to finish
             if (shouldLogProgress) {
-                int currPercent;
-                int prevPercent = 0;
+                long currPercent;
+                long prevPercent = 0;
                 boolean isDone;
                 do {
                     currPercent = 0;
@@ -208,7 +209,7 @@ public class TarLz4Compressor {
                         isDone &= futures[i].isDone();
                     }
                     
-                    currPercent = (int) (currPercent * 100 / totalBytes);
+                    currPercent = currPercent * 100 / totalBytes;
                     if (prevPercent / logProgressPercentInterval < currPercent / logProgressPercentInterval) {
                         log.info("TarLz4 compression progress: {}%", currPercent);
                     }
