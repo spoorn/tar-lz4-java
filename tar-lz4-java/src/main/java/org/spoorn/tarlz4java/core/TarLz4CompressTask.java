@@ -94,14 +94,13 @@ public class TarLz4CompressTask implements Runnable {
 
         String entryName = base + file.getName();
 
-        // Add the Tar Archive Entry
-        taos.putArchiveEntry(new TarArchiveEntry(file, entryName));
-        taos.setLongFileMode(TarArchiveOutputStream.LONGFILE_POSIX);
-
         if (file.isFile()) {
             // Write file content to archive
             try (FileInputStream fis = new FileInputStream(file)) {
                 long prevBytesProcessed = this.bytesProcessed;
+                // Add the Tar Archive Entry
+                taos.putArchiveEntry(new TarArchiveEntry(file, entryName));
+                taos.setLongFileMode(TarArchiveOutputStream.LONGFILE_POSIX);
                 this.bytesProcessed += IOUtils.copy(fis, taos, this.bufferSize);
                 taos.closeArchiveEntry();
 
@@ -118,6 +117,9 @@ public class TarLz4CompressTask implements Runnable {
                 count++;
             }
         } else {
+            // Add the Tar Archive Entry
+            taos.putArchiveEntry(new TarArchiveEntry(file, entryName));
+            taos.setLongFileMode(TarArchiveOutputStream.LONGFILE_POSIX);
             taos.closeArchiveEntry();
             for (File f : file.listFiles()) {
                 // Recurse on nested files/directories
