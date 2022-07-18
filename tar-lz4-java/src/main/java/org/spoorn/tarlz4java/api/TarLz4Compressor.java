@@ -18,6 +18,8 @@ import java.nio.channels.AsynchronousFileChannel;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -37,13 +39,19 @@ public class TarLz4Compressor {
     private final int logProgressPercentInterval;
     private final Verbosity verbosity;
     private final TarLz4Logger log;
-    
+    private final Set<String> excludeFiles = new HashSet<>();
+
     public TarLz4Compressor(int numThreads, int bufferSize, boolean shouldLogProgress, int logProgressPercentInterval, Verbosity verbosity) {
         // We'll submit our runnable tasks using an executor service with `numThreads` threads in the pool
-       this(numThreads, bufferSize, shouldLogProgress, logProgressPercentInterval, verbosity, Executors.newFixedThreadPool(numThreads, new NamedThreadFactory(THREAD_NAME)));
+        this(numThreads, bufferSize, shouldLogProgress, logProgressPercentInterval, verbosity,null);
+    }
+    
+    public TarLz4Compressor(int numThreads, int bufferSize, boolean shouldLogProgress, int logProgressPercentInterval, Verbosity verbosity, Set<String> excludeFiles) {
+        // We'll submit our runnable tasks using an executor service with `numThreads` threads in the pool
+       this(numThreads, bufferSize, shouldLogProgress, logProgressPercentInterval, verbosity, Executors.newFixedThreadPool(numThreads, new NamedThreadFactory(THREAD_NAME)), excludeFiles);
     }
 
-    public TarLz4Compressor(int numThreads, int bufferSize, boolean shouldLogProgress, int logProgressPercentInterval, Verbosity verbosity, ExecutorService executorService) {
+    public TarLz4Compressor(int numThreads, int bufferSize, boolean shouldLogProgress, int logProgressPercentInterval, Verbosity verbosity, ExecutorService executorService, Set<String> excludeFiles) {
         this.numThreads = numThreads;
         this.bufferSize = bufferSize;
         this.executorService = executorService;
@@ -51,6 +59,9 @@ public class TarLz4Compressor {
         this.logProgressPercentInterval = logProgressPercentInterval;
         this.verbosity = verbosity;
         this.log = new TarLz4Logger(logger, this.verbosity);
+        if (excludeFiles != null && !excludeFiles.isEmpty()) {
+            this.excludeFiles.addAll(excludeFiles);
+        }
     }
 
     /**
@@ -116,7 +127,7 @@ public class TarLz4Compressor {
                 try (FileOutputStream outputFile = new FileOutputStream(destinationPath)) {
                     new TarLz4CompressTask(sourcePath, destinationPath, 0, fileCount, 0, 1, 
                             this.bufferSize, TarLz4Util.getDirectorySize(sourceFile.toPath()), 
-                            shouldLogProgress, logProgressPercentInterval, verbosity, outputFile).run();
+                            shouldLogProgress, logProgressPercentInterval, verbosity, excludeFiles, outputFile).run();
                 }
             } else {
                 // Reuse futures array
@@ -177,7 +188,7 @@ public class TarLz4Compressor {
                 FileOutputStream tmpOutputFile = new FileOutputStream(destinationPath + "_" + i + TMP_SUFFIX);
 
                 TarLz4CompressTask runnable = new TarLz4CompressTask(sourcePath, destinationPath, start, end, i, numThreads,
-                        bufferSize, totalBytes, false, logProgressPercentInterval, verbosity, tmpOutputFile);
+                        bufferSize, totalBytes, false, logProgressPercentInterval, verbosity, excludeFiles, tmpOutputFile);
 
                 // Save a reference to each Thread Future, and the Runnable, so we can properly close() or clean them up later
                 futures[i] = executorService.submit(runnable);
