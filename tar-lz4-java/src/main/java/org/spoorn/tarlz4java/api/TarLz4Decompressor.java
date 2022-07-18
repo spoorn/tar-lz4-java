@@ -55,7 +55,7 @@ public class TarLz4Decompressor {
                     : "source path [" + sourcePath + "] is not a valid .tar.lz4";
             String sourceFileName = sourceFile.getName();
             String sourceBaseName = sourceFileName.substring(0, sourceFileName.lastIndexOf(TAR_LZ4_EXTENSION));
-            destinationPath += sourceBaseName;
+            destinationPath = Path.of(destinationPath, sourceBaseName).toString();
 
             log.debug("Decompressing archive from source={} to destination={}", sourcePath, destinationPath);
 

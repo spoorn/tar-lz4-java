@@ -116,7 +116,7 @@ public class TarLz4Compressor {
         try {
             File sourceFile = new File(sourcePath);
             assert sourceFile.exists() && sourceFile.isDirectory() : "source path [" + sourcePath + "] is not a valid directory";
-            destinationPath += outputFileBaseName + TAR_LZ4_EXTENSION;
+            destinationPath = Path.of(destinationPath, outputFileBaseName + TAR_LZ4_EXTENSION).toString();
             
             // Get our file count
             long fileCount = TarLz4Util.fileCount(Path.of(sourcePath));
