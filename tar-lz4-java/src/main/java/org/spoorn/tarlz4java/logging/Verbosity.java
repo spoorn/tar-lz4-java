@@ -4,8 +4,8 @@ package org.spoorn.tarlz4java.logging;
  * Used when configuring the builder for TarLz4 Compressor/Decompressor to transform the log level to INFO level to
  * allow for more verbose logging.
  * 
- * The levels of Verbosity go in order from least to most restrictive:
- *      DEBUG < INFO < WARN < ERROR < NONE
+ * The levels of Verbosity go in order from most to least verbose:
+ *      DEBUG > INFO > WARN > ERROR > NONE
  *      
  * Setting the Verbosity when creating a {@link org.spoorn.tarlz4java.api.TarLz4Compressor} or {@link org.spoorn.tarlz4java.api.TarLz4Decompressor}
  * will change log lines to INFO level, if they are "at least" the Verbosity level.
