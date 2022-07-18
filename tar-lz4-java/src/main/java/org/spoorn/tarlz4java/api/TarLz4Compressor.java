@@ -186,7 +186,7 @@ public class TarLz4Compressor {
                 // Sometimes, files are split earlier than the number of intervals, or there are less files than numThreads
                 // guard against this by skipping task spinup if we already can process all the files with less than numThreads.
                 if (end <= start) {
-                    continue;
+                    break;
                 }
 
                 // Each Runnable task will be outputting to a temporary file, which is the same name as the output file except
