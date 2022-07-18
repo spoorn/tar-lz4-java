@@ -1,3 +1,4 @@
 rootProject.name = 'TarLz4Java'
 include 'tar-lz4-java'
+include 'test'
 
