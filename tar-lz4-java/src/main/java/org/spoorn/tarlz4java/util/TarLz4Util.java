@@ -6,6 +6,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class TarLz4Util {
@@ -72,5 +74,45 @@ public class TarLz4Util {
             }
         });
         return res;
+    }
+
+    /**
+     * Checks that two directories are equal in content recursively.
+     * 
+     * @param dir1 Path to first directory
+     * @param dir2 Path to second directory
+     * @return true if the directories are equal, else false
+     * @throws IOException If there was an issue reading from the directories
+     */
+    public static boolean checkDirsAreEqual(Path dir1, Path dir2) throws IOException {
+        AtomicBoolean isEqual = new AtomicBoolean(true);
+        Files.walkFileTree(dir1, new SimpleFileVisitor<Path>() {
+            
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                FileVisitResult result = super.visitFile(file, attrs);
+
+                // get the relative file name from path "one"
+                Path relativize = dir1.relativize(file);
+                // construct the path for the counterpart file in "other"
+                Path fileInOther = dir2.resolve(relativize);
+                
+                if (Files.notExists(fileInOther)) {
+                    isEqual.set(false);
+                    return FileVisitResult.TERMINATE;
+                }
+
+                byte[] otherBytes = Files.readAllBytes(fileInOther);
+                byte[] theseBytes = Files.readAllBytes(file);
+                
+                if (!Arrays.equals(otherBytes, theseBytes)) {
+                    isEqual.set(false);
+                    return FileVisitResult.TERMINATE;
+                }
+                return result;
+            }
+        });
+        
+        return isEqual.get();
     }
 }

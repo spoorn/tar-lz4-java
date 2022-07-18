@@ -13,7 +13,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 
 @Log4j2
-public class TarLz4Task implements Runnable {
+public class TarLz4CompressTask implements Runnable {
 
     private final String sourcePath;  // target input path
     private final String destinationPath;  // destination output file i.e. the temporary file this thread will write to
@@ -26,8 +26,8 @@ public class TarLz4Task implements Runnable {
     private final long end;   // exclusive
     private int count;  // Current file number this task is processing
 
-    public TarLz4Task(String sourcePath, String destinationPath, long start, long end, int slice, 
-                      int totalSlices, int bufferSize, FileOutputStream fos) {
+    public TarLz4CompressTask(String sourcePath, String destinationPath, long start, long end, int slice,
+                              int totalSlices, int bufferSize, FileOutputStream fos) {
         this.sourcePath = sourcePath;
         this.destinationPath = destinationPath;
         this.slice = slice;

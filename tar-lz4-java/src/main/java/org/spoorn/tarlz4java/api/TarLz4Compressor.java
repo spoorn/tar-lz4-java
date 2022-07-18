@@ -3,8 +3,7 @@ package org.spoorn.tarlz4java.api;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.WRITE;
 import lombok.extern.log4j.Log4j2;
-import org.apache.commons.compress.utils.FileNameUtils;
-import org.spoorn.tarlz4java.core.TarLz4Task;
+import org.spoorn.tarlz4java.core.TarLz4CompressTask;
 import org.spoorn.tarlz4java.util.TarLz4Util;
 import org.spoorn.tarlz4java.util.concurrent.NamedThreadFactory;
 
@@ -27,7 +26,7 @@ public class TarLz4Compressor {
     
     public static final String TAR_LZ4_EXTENSION = ".tar.lz4";
     private static final String TMP_SUFFIX = ".tmp";
-    private static final String THREAD_NAME = "TarLz4Task";
+    private static final String THREAD_NAME = "TarLz4CompressTask";
     
     private final ExecutorService executorService;
     private final int bufferSize;
@@ -64,8 +63,9 @@ public class TarLz4Compressor {
      * 
      * @param sourcePath Source path.  Should be the path to the directory to compress.
      * @param destinationPath Destination path.  Should be the path to a directory where the .tar.lz4 will go.
-     * @param outputFileBaseName Output file base name, excluding the extension
-     * @return Path to the output file, else a RuntimeException would have been thrown
+     * @param outputFileBaseName Output file base name, excluding the extension.  This wraps the source
+     *                           under a new directory with this base name in the archive.
+     * @return Path to the output file
      */
     public Path compress(String sourcePath, String destinationPath, String outputFileBaseName) {
         try {
@@ -80,7 +80,7 @@ public class TarLz4Compressor {
             if (numThreads < 2) {
                 // In the single-threaded case, we simply write directly to the final output file
                 try (FileOutputStream outputFile = new FileOutputStream(destinationPath)) {
-                    new TarLz4Task(sourcePath, destinationPath, 0, fileCount, 0, 1, this.bufferSize, outputFile).run();
+                    new TarLz4CompressTask(sourcePath, destinationPath, 0, fileCount, 0, 1, this.bufferSize, outputFile).run();
                 }
             } else {
                 // Reuse futures array
@@ -119,7 +119,7 @@ public class TarLz4Compressor {
         long[] fileNumIntervals = TarLz4Util.getFileCountIntervalsFromSize(Path.of(sourcePath), numThreads);
         
         // In the multithreaded use case, we'll spin up `numThreads` threads, each writing to its own temporary file
-        TarLz4Task[] tasks = new TarLz4Task[numThreads];
+        TarLz4CompressTask[] tasks = new TarLz4CompressTask[numThreads];
 
         for (int i = 0; i < numThreads; i++) {
             // Spin up a thread for each Runnable task
@@ -136,7 +136,7 @@ public class TarLz4Compressor {
             // TODO: Make this randomly generated string and validate it doesn't already exist
             FileOutputStream tmpOutputFile = new FileOutputStream(destinationPath + "_" + i + TMP_SUFFIX);
 
-            TarLz4Task runnable = new TarLz4Task(sourcePath, destinationPath, start, end, i, numThreads, bufferSize, tmpOutputFile);
+            TarLz4CompressTask runnable = new TarLz4CompressTask(sourcePath, destinationPath, start, end, i, numThreads, bufferSize, tmpOutputFile);
 
             // Save a reference to each Thread Future, and the Runnable so we can properly close() or clean them up later
             futures[i] = executorService.submit(runnable);

@@ -2,6 +2,9 @@ package org.spoorn.tarlz4java.api;
 
 import java.util.concurrent.ExecutorService;
 
+/**
+ * Convenience builder to create a {@link TarLz4Compressor}.
+ */
 public class TarLz4CompressorBuilder {
 
     private ExecutorService executorService = null;
