@@ -10,6 +10,19 @@ repositories {
     mavenCentral()
 }
 
+subprojects {
+    apply plugin: 'java'
+    
+    compileJava {
+        doFirst {
+            options.compilerArgs += [
+                    '--module-path', classpath.asPath
+            ]
+            classpath = files()
+        }
+    }
+}
+
 dependencies {
     
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
