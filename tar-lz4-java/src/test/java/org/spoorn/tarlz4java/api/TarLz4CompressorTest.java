@@ -36,7 +36,7 @@ public class TarLz4CompressorTest {
     
     @Test
     public void small_overall_singleThread() throws Exception {
-        TarLz4Compressor compressor = new TarLz4CompressorBuilder().build();
+        TarLz4Compressor compressor = new TarLz4CompressorBuilder().shouldLogProgress(true).build();
         Path outputPath = compressor.compress(test1.getPath(), tmpDir, randomBaseName);
         resourcesCreated.add(outputPath);
         assertEquals(tmpDir + randomBaseName + TAR_LZ4_EXTENSION, outputPath.toString());
@@ -53,7 +53,7 @@ public class TarLz4CompressorTest {
 
     @Test
     public void small_overall_multiThreaded() throws Exception {
-        TarLz4Compressor compressor = new TarLz4CompressorBuilder().numThreads(6).build();
+        TarLz4Compressor compressor = new TarLz4CompressorBuilder().shouldLogProgress(true).numThreads(6).build();
         Path outputPath = compressor.compress(test1.getPath(), tmpDir, randomBaseName);
         resourcesCreated.add(outputPath);
         assertEquals(tmpDir + randomBaseName + TAR_LZ4_EXTENSION, outputPath.toString());
@@ -70,7 +70,7 @@ public class TarLz4CompressorTest {
 
     @Test
     public void small_overall_multiThreaded_customBufferSize() throws Exception {
-        TarLz4Compressor compressor = new TarLz4CompressorBuilder().numThreads(6).bufferSize(4096).build();
+        TarLz4Compressor compressor = new TarLz4CompressorBuilder().shouldLogProgress(true).numThreads(6).bufferSize(4096).build();
         Path outputPath = compressor.compress(test1.getPath(), tmpDir, randomBaseName);
         resourcesCreated.add(outputPath);
         assertEquals(tmpDir + randomBaseName + TAR_LZ4_EXTENSION, outputPath.toString());
@@ -87,7 +87,8 @@ public class TarLz4CompressorTest {
 
     @Test
     public void small_overall_multiThreaded_customExecutorService() throws Exception {
-        TarLz4Compressor compressor = new TarLz4CompressorBuilder().numThreads(6).executorService(Executors.newFixedThreadPool(4, new NamedThreadFactory("TarLz4Test"))).build();
+        TarLz4Compressor compressor = new TarLz4CompressorBuilder().shouldLogProgress(true).numThreads(6)
+                .executorService(Executors.newFixedThreadPool(4, new NamedThreadFactory("TarLz4Test"))).build();
         Path outputPath = compressor.compress(test1.getPath(), tmpDir, randomBaseName);
         resourcesCreated.add(outputPath);
         assertEquals(tmpDir + randomBaseName + TAR_LZ4_EXTENSION, outputPath.toString());

@@ -31,18 +31,20 @@ public class TarLz4Compressor {
     private final ExecutorService executorService;
     private final int bufferSize;
     private final int numThreads;
+    private final boolean shouldLogProgress;
+    private final int logProgressPercentInterval;
     
-    public TarLz4Compressor(int numThreads, int bufferSize) {
-        this.numThreads = numThreads;
-        this.bufferSize = bufferSize;
+    public TarLz4Compressor(int numThreads, int bufferSize, boolean shouldLogProgress, int logProgressPercentInterval) {
         // We'll submit our runnable tasks using an executor service with `numThreads` threads in the pool
-        this.executorService = Executors.newFixedThreadPool(numThreads, new NamedThreadFactory(THREAD_NAME));
+       this(numThreads, bufferSize, shouldLogProgress, logProgressPercentInterval, Executors.newFixedThreadPool(numThreads, new NamedThreadFactory(THREAD_NAME)));
     }
 
-    public TarLz4Compressor(int numThreads, int bufferSize, ExecutorService executorService) {
+    public TarLz4Compressor(int numThreads, int bufferSize, boolean shouldLogProgress, int logProgressPercentInterval, ExecutorService executorService) {
         this.numThreads = numThreads;
         this.bufferSize = bufferSize;
         this.executorService = executorService;
+        this.shouldLogProgress = shouldLogProgress;
+        this.logProgressPercentInterval = logProgressPercentInterval;
     }
 
     /**
@@ -106,7 +108,8 @@ public class TarLz4Compressor {
             if (numThreads < 2) {
                 // In the single-threaded case, we simply write directly to the final output file
                 try (FileOutputStream outputFile = new FileOutputStream(destinationPath)) {
-                    new TarLz4CompressTask(sourcePath, destinationPath, 0, fileCount, 0, 1, this.bufferSize, outputFile).run();
+                    new TarLz4CompressTask(sourcePath, destinationPath, 0, fileCount, 0, 1, 
+                            this.bufferSize, TarLz4Util.getDirectorySize(sourceFile.toPath()), shouldLogProgress, logProgressPercentInterval, outputFile).run();
                 }
             } else {
                 // Reuse futures array
@@ -143,37 +146,77 @@ public class TarLz4Compressor {
         // Get the file number intervals
         // TODO: Make it configurable to use file count vs this
         long[] fileNumIntervals = TarLz4Util.getFileCountIntervalsFromSize(Path.of(sourcePath), numThreads);
+        long totalBytes = fileNumIntervals[fileNumIntervals.length - 1];
         
         // In the multithreaded use case, we'll spin up `numThreads` threads, each writing to its own temporary file
         TarLz4CompressTask[] tasks = new TarLz4CompressTask[numThreads];
+        
+        boolean success = false;
 
-        for (int i = 0; i < numThreads; i++) {
-            // Spin up a thread for each Runnable task
+        try {
+            for (int i = 0; i < numThreads; i++) {
+                // Spin up a thread for each Runnable task
 
-            // start of the slice is from our fileNumIntervals
-            long start = fileNumIntervals[i];
+                // start of the slice is from our fileNumIntervals
+                long start = fileNumIntervals[i];
 
-            // end of the slice is 1 before the next fileNumInterval, or if we are on the last slice
-            // we can simply set this to the fileCount to cover the rest of the files
-            long end = i == numThreads - 1 ? fileCount : fileNumIntervals[i + 1];
+                // end of the slice is 1 before the next fileNumInterval, or if we are on the last slice
+                // we can simply set this to the fileCount to cover the rest of the files
+                long end = i == numThreads - 1 ? fileCount : fileNumIntervals[i + 1];
 
-            // Each Runnable task will be outputting to a temporary file, which is the same name as the output file except
-            // suffixed with "_sliceNum.tmp"
-            // TODO: Make this randomly generated string and validate it doesn't already exist
-            FileOutputStream tmpOutputFile = new FileOutputStream(destinationPath + "_" + i + TMP_SUFFIX);
+                // Each Runnable task will be outputting to a temporary file, which is the same name as the output file except
+                // suffixed with "_sliceNum.tmp"
+                // TODO: Make this randomly generated string and validate it doesn't already exist
+                FileOutputStream tmpOutputFile = new FileOutputStream(destinationPath + "_" + i + TMP_SUFFIX);
 
-            TarLz4CompressTask runnable = new TarLz4CompressTask(sourcePath, destinationPath, start, end, i, numThreads, bufferSize, tmpOutputFile);
+                TarLz4CompressTask runnable = new TarLz4CompressTask(sourcePath, destinationPath, start, end, i, numThreads,
+                        bufferSize, totalBytes, false, logProgressPercentInterval, tmpOutputFile);
 
-            // Save a reference to each Thread Future, and the Runnable so we can properly close() or clean them up later
-            futures[i] = executorService.submit(runnable);
-            tasks[i] = runnable;
+                // Save a reference to each Thread Future, and the Runnable, so we can properly close() or clean them up later
+                futures[i] = executorService.submit(runnable);
+                tasks[i] = runnable;
+            }
+
+            // Logging progress for multithreaded case, also waits for future to finish
+            if (shouldLogProgress) {
+                int currPercent;
+                int prevPercent = 0;
+                boolean isDone;
+                do {
+                    currPercent = 0;
+                    isDone = true;
+                    for (int i = 0; i < numThreads; i++) {
+                        currPercent += tasks[i].getBytesProcessed();
+                        isDone &= futures[i].isDone();
+                    }
+                    
+                    currPercent = (int) (currPercent * 100 / totalBytes);
+                    if (prevPercent / logProgressPercentInterval < currPercent / logProgressPercentInterval) {
+                        log.info("TarLz4 compression progress: {}%", currPercent);
+                    }
+                    prevPercent = currPercent;
+                    Thread.sleep(100);
+                } while (!isDone && prevPercent < 100);
+            }
+
+            // Wait for all futures to finish
+            for (int i = 0; i < numThreads; i++) {
+                futures[i].get();
+                tasks[i].fos.close();   // Clean up and close the .tmp file OutputStreams
+            }
+            success = true;
+        } finally {
+            // Safety check
+            if (!success) {
+                // Wait for all futures to finish
+                for (int i = 0; i < numThreads; i++) {
+                    futures[i].get();
+                    tasks[i].fos.close();   // Clean up and close the .tmp file OutputStreams
+                }
+            }
         }
-
-        // Wait for all futures to finish
-        for (int i = 0; i < numThreads; i++) {
-            futures[i].get();
-            tasks[i].fos.close();   // Clean up and close the .tmp file OutputStreams
-        }
+        
+        log.debug("Finished compressing archive task for source={}, destination={}", sourcePath, destinationPath);
     }
     
     private void mergeTmpArchives(String destinationPath, Future<?>[] futures) throws IOException, ExecutionException, InterruptedException {

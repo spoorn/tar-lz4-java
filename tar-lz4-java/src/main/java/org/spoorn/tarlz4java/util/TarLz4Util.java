@@ -40,14 +40,15 @@ public class TarLz4Util {
      *
      * @param path Path to process
      * @param numIntervals Number of intervals
-     * @return long[] that holds the file number indexes to split at
+     * @return long[] that holds the file number indexes to split at.  The last element will be the total size of the directory in bytes.
      * @throws IOException If processing files fail
      */
     public static long[] getFileCountIntervalsFromSize(Path path, int numIntervals) throws IOException {
-        long[] res = new long[numIntervals];
+        long[] res = new long[numIntervals + 1];
         // index of res, file count, current size, previous size
         long[] state = {1, 0, 0, 0};
-        long sliceLength = getDirectorySize(path) / numIntervals;
+        long directorySize = getDirectorySize(path);
+        long sliceLength = directorySize / numIntervals;
 
         Files.walkFileTree(path, new SimpleFileVisitor<>() {
 
@@ -73,6 +74,8 @@ public class TarLz4Util {
                 return super.visitFileFailed(file, exc);
             }
         });
+        
+        res[res.length - 1] = directorySize;
         return res;
     }
 

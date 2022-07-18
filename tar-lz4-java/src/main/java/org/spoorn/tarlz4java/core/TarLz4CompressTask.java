@@ -1,5 +1,6 @@
 package org.spoorn.tarlz4java.core;
 
+import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 import net.jpountz.lz4.LZ4FrameOutputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
@@ -20,24 +21,34 @@ public class TarLz4CompressTask implements Runnable {
     private final int slice;  // The slice we are looking at, indexed at 0
     private final int totalSlices;  // The total number of slices.  Used to know if we are on the last slice to write the Tar Archive footers
     private final int bufferSize;   // buffer size for copying files to the Tar Archive
+    private final long totalBytes; // Total number of bytes in the sourcePath, for logging progress purposes
+    private final boolean shouldLogProgress;  // True to log progress via a Logger, else false
+    private final int logProgressPercentInterval;  // Percentage interval to log progress
     public final FileOutputStream fos;  // Output Stream to the file output for this task
 
     private final long start;    // inclusive
     private final long end;   // exclusive
     private int count;  // Current file number this task is processing
+    @Getter
+    private long bytesProcessed;
 
     public TarLz4CompressTask(String sourcePath, String destinationPath, long start, long end, int slice,
-                              int totalSlices, int bufferSize, FileOutputStream fos) {
+                              int totalSlices, int bufferSize, long totalBytes, boolean shouldLogProgress, 
+                              int logProgressPercentInterval, FileOutputStream fos) {
         this.sourcePath = sourcePath;
         this.destinationPath = destinationPath;
         this.slice = slice;
         this.totalSlices = totalSlices;
         this.bufferSize = bufferSize;
+        this.totalBytes = totalBytes;
+        this.shouldLogProgress = shouldLogProgress;
+        this.logProgressPercentInterval = logProgressPercentInterval;
         this.fos = fos;
 
         this.start = start;
         this.end = end;
         this.count = 0;
+        this.bytesProcessed = 0;
     }
 
     @Override
@@ -78,8 +89,19 @@ public class TarLz4CompressTask implements Runnable {
         if (file.isFile()) {
             // Write file content to archive
             try (FileInputStream fis = new FileInputStream(file)) {
-                IOUtils.copy(fis, taos, this.bufferSize);
+                long prevBytesProcessed = this.bytesProcessed;
+                this.bytesProcessed += IOUtils.copy(fis, taos, this.bufferSize);
                 taos.closeArchiveEntry();
+
+                // Logging progress for single-thread case
+                if (shouldLogProgress && this.totalSlices == 1) {
+                    int prevPercent = (int) (prevBytesProcessed * 100 / totalBytes);
+                    int currPercent = (int) ((this.bytesProcessed) * 100 / totalBytes);
+                    int interval = logProgressPercentInterval;
+                    if (prevPercent / interval < currPercent / interval) {
+                        log.info("TarLz4 compression progress: {}%", currPercent);
+                    }
+                }
 
                 count++;
             }

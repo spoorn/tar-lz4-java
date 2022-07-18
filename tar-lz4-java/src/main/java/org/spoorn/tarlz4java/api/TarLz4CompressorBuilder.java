@@ -10,6 +10,8 @@ public class TarLz4CompressorBuilder {
     private ExecutorService executorService = null;
     private int bufferSize = 8192;
     private int numThreads = 1;
+    private boolean shouldLogProgress = false;
+    private int logProgressPercentInterval = 10;
     
     public TarLz4CompressorBuilder() {
         
@@ -49,14 +51,36 @@ public class TarLz4CompressorBuilder {
     }
 
     /**
+     * Enables logging compression progress to the Logger/console.
+     *
+     * @param shouldLogProgress True to log progress using a Logger, else false
+     * @return TarLz4CompressorBuilder
+     */
+    public TarLz4CompressorBuilder shouldLogProgress(boolean shouldLogProgress) {
+        this.shouldLogProgress = shouldLogProgress;
+        return this;
+    }
+
+    /**
+     * Sets the progress percentage interval to log progress.
+     *
+     * @param logProgressPercentInterval The progress percentage interval to trigger progress logs
+     * @return TarLz4CompressorBuilder
+     */
+    public TarLz4CompressorBuilder logProgressPercentInterval(int logProgressPercentInterval) {
+        this.logProgressPercentInterval = logProgressPercentInterval;
+        return this;
+    }
+
+    /**
      * Builds the TarLz4Compressor using parameters.
      * 
      * @return A ready TarLz4Compressor
      */
     public TarLz4Compressor build() {
         if (this.executorService == null) {
-            return new TarLz4Compressor(numThreads, bufferSize);
+            return new TarLz4Compressor(numThreads, bufferSize, shouldLogProgress, logProgressPercentInterval);
         }
-        return new TarLz4Compressor(numThreads, bufferSize, executorService);
+        return new TarLz4Compressor(numThreads, bufferSize, shouldLogProgress, logProgressPercentInterval, executorService);
     }
 }
