@@ -11,15 +11,9 @@ repositories {
 }
 
 subprojects {
-    apply plugin: 'java'
-    
-    compileJava {
-        doFirst {
-            options.compilerArgs += [
-                    '--module-path', classpath.asPath
-            ]
-            classpath = files()
-        }
+    apply plugin: "java"
+    java {
+        modularity.inferModulePath = true
     }
 }
 
