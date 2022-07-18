@@ -54,7 +54,7 @@ public class TarLz4Util {
 
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                if (state[0] < res.length) {
+                if (state[0] < res.length - 1) {
                     state[2] += attrs.size();
                     if (state[3] / sliceLength < state[2] / sliceLength) {
                         res[(int) state[0]] = state[1];
