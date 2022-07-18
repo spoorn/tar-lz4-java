@@ -131,11 +131,17 @@ public class TarLz4Compressor {
                             shouldLogProgress, logProgressPercentInterval, verbosity, excludeFiles, outputFile).run();
                 }
             } else {
+                long[] fileNumIntervals = TarLz4Util.getFileCountIntervalsFromSize(Path.of(sourcePath), numThreads);
+
+                // We may in actuality use less than numThreads if the way files are split can cover all files early,
+                // or we have less files than numThreads.
+                int actualNumThreads = (int) fileNumIntervals[fileNumIntervals.length - 2];
+
                 // Reuse futures array
-                var futures = new Future[numThreads];
+                var futures = new Future[actualNumThreads];
                 
                 // Archive + Compression tasks
-                submitArchiveTasks(sourcePath, destinationPath, fileCount, futures);
+                submitArchiveTasks(sourcePath, destinationPath, fileCount, fileNumIntervals, actualNumThreads, futures);
 
                 // At this point, we have all our .tmp files which are standalone .tar.lz4 compressed archives for each  slice
                 // The .tmp files can't be opened themselves however, as they are a sliced part of the final output file.
@@ -149,7 +155,7 @@ public class TarLz4Compressor {
                 // This is made possible with the AsynchronousFileChannel API, which allows for writing bytes directly into a file
                 // at some specified offset position.
 
-                mergeTmpArchives(destinationPath, futures);
+                mergeTmpArchives(destinationPath, actualNumThreads, futures);
             }
 
             log.debug("Finished compressing {} files from source={} to destination={}", fileCount, sourcePath, destinationPath);
@@ -160,11 +166,10 @@ public class TarLz4Compressor {
         }
     }
     
-    private void submitArchiveTasks(String sourcePath, String destinationPath, long fileCount, Future<?>[] futures) 
+    private void submitArchiveTasks(String sourcePath, String destinationPath, long fileCount, long[] fileNumIntervals, int numThreads, Future<?>[] futures) 
             throws IOException, ExecutionException, InterruptedException {
         // Get the file number intervals
         // TODO: Make it configurable to use file count vs this
-        long[] fileNumIntervals = TarLz4Util.getFileCountIntervalsFromSize(Path.of(sourcePath), numThreads);
         long totalBytes = fileNumIntervals[fileNumIntervals.length - 1];
         
         // In the multithreaded use case, we'll spin up `numThreads` threads, each writing to its own temporary file
@@ -211,10 +216,8 @@ public class TarLz4Compressor {
                     currPercent = 0;
                     isDone = true;
                     for (int i = 0; i < numThreads; i++) {
-                        if (futures[i] != null && tasks[i] != null) {
-                            currPercent += tasks[i].getBytesProcessed();
-                            isDone &= futures[i].isDone();
-                        }
+                        currPercent += tasks[i].getBytesProcessed();
+                        isDone &= futures[i].isDone();
                     }
                     
                     currPercent = currPercent * 100 / totalBytes;
@@ -228,10 +231,8 @@ public class TarLz4Compressor {
 
             // Wait for all futures to finish
             for (int i = 0; i < numThreads; i++) {
-                if (futures[i] != null) {
-                    futures[i].get();
-                    tasks[i].fos.close();   // Clean up and close the .tmp file OutputStreams
-                }
+                futures[i].get();
+                tasks[i].fos.close();   // Clean up and close the .tmp file OutputStreams
             }
             success = true;
         } finally {
@@ -239,10 +240,8 @@ public class TarLz4Compressor {
             if (!success) {
                 // Wait for all futures to finish
                 for (int i = 0; i < numThreads; i++) {
-                    if (futures[i] != null) {
-                        futures[i].get();
-                        tasks[i].fos.close();   // Clean up and close the .tmp file OutputStreams
-                    }
+                    futures[i].get();
+                    tasks[i].fos.close();   // Clean up and close the .tmp file OutputStreams
                 }
             }
         }
@@ -250,26 +249,18 @@ public class TarLz4Compressor {
         log.debug("Finished compressing archive task for source={}, destination={}", sourcePath, destinationPath);
     }
     
-    private void mergeTmpArchives(String destinationPath, Future<?>[] futures) throws IOException, ExecutionException, InterruptedException {
+    private void mergeTmpArchives(String destinationPath, int numThreads, Future<?>[] futures) throws IOException, ExecutionException, InterruptedException {
         // Pre-check which indices of futures are nonEmpty
-        int n = 0;
-        for (int i = 0; i < futures.length; i++) {
-            if (futures[i] == null) {
-                break;
-            }
-            n++;
-        }
-        
-        FileInputStream[] tmpFiles = new FileInputStream[n];
-        FileChannel[] tmpChannels = new FileChannel[n];
-        long[] fileChannelOffsets = new long[n];
+        FileInputStream[] tmpFiles = new FileInputStream[numThreads];
+        FileChannel[] tmpChannels = new FileChannel[numThreads];
+        long[] fileChannelOffsets = new long[numThreads];
 
         // This grabs a FileChannel to read for each .tmp file, and also calculates what all the fileChannel position offsets
         // we should use for each Thread, based on the size in bytes of each .tmp file
-        for (int i = 0; i < n; i++) {
+        for (int i = 0; i < numThreads; i++) {
             tmpFiles[i] = new FileInputStream(destinationPath + "_" + i + TMP_SUFFIX);
             tmpChannels[i] = tmpFiles[i].getChannel();
-            if (i < n - 1) {
+            if (i < numThreads - 1) {
                 fileChannelOffsets[i + 1] = fileChannelOffsets[i] + tmpChannels[i].size();
             }
         }
@@ -277,7 +268,7 @@ public class TarLz4Compressor {
         // Create an AsynchronousFileChannel for the final output `.tar.lz4` file
         // This channel is has the capability to WRITE to the file, or CREATE it if it doesn't yet exist
         AsynchronousFileChannel destChannel = AsynchronousFileChannel.open(Path.of(destinationPath), WRITE, CREATE);
-        for (int i = 0; i < n; i++) {
+        for (int i = 0; i < numThreads; i++) {
             int finalI = i;
             // Let's again spin up a thread for each .tmp file to write to its slice, or region in the final output file
             futures[i] = executorService.submit(() -> {
@@ -316,7 +307,7 @@ public class TarLz4Compressor {
         }
 
         // Wait for all futures to finish
-        for (int i = 0; i < n; i++) {
+        for (int i = 0; i < numThreads; i++) {
             futures[i].get();
         }
 

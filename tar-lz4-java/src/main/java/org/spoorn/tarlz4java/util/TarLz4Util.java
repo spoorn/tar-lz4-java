@@ -41,10 +41,11 @@ public class TarLz4Util {
      * @param path Path to process
      * @param numIntervals Number of intervals
      * @return long[] that holds the file number indexes to split at.  The last element will be the total size of the directory in bytes.
+     *          The second to last element will be the number of actual effective indices in the result to read from.
      * @throws IOException If processing files fail
      */
     public static long[] getFileCountIntervalsFromSize(Path path, int numIntervals) throws IOException {
-        long[] res = new long[numIntervals + 1];
+        long[] res = new long[numIntervals + 2];
         // index of res, file count, current size, previous size
         long[] state = {1, 0, 0, 0};
         long directorySize = getDirectorySize(path);
@@ -75,6 +76,7 @@ public class TarLz4Util {
             }
         });
         
+        res[res.length - 2] = state[0] - 1;  // -1 since we started at 1, and state[0] will be the "next" index
         res[res.length - 1] = directorySize;
         return res;
     }
