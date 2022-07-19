@@ -9,12 +9,6 @@ Note: This currently only supports Tar Archive + Compressing directories.  Singu
 
 # How to Install
 
-### Available on Maven Central
-
-TBD
-
----
-
 ### Using <u>Jitpack.io</u>
 
 #### build.gradle:
