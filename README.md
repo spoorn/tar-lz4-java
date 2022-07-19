@@ -15,9 +15,9 @@ TBD
 
 ---
 
-### <u>Jitpack.io</u>
+### Using <u>Jitpack.io</u>
 
-build.gradle:
+#### build.gradle:
 
 ```groovy
 respositories {
@@ -29,6 +29,25 @@ dependencies {
   ...
   implementation("com.github.spoorn:tar-lz4-java:<version>")
 }
+```
+
+_or_
+
+### maven:
+
+```xml
+<repositories>
+  <repository>
+      <id>jitpack.io</id>
+      <url>https://jitpack.io</url>
+  </repository>
+</repositories>
+
+<dependency>
+    <groupId>com.github.spoorn</groupId>
+    <artifactId>tar-lz4-java</artifactId>
+    <version>see Releases page for version</version>
+</dependency>
 ```
 
 You can find the `<version>` under [Releases](https://github.com/spoorn/tar-lz4-java/releases)
