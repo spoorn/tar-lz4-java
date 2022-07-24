@@ -18,7 +18,9 @@ import java.nio.channels.AsynchronousFileChannel;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -40,6 +42,8 @@ public class TarLz4Compressor {
     private final Verbosity verbosity;
     private final TarLz4Logger log;
     private final Set<String> excludeFiles = new HashSet<>();
+    
+    private final List<String> resourcesCreated = new ArrayList<>();
 
     public TarLz4Compressor(int numThreads, int bufferSize, boolean shouldLogProgress, int logProgressPercentInterval, Verbosity verbosity) {
         // We'll submit our runnable tasks using an executor service with `numThreads` threads in the pool
@@ -112,7 +116,7 @@ public class TarLz4Compressor {
      *                           under a new directory with this base name in the archive.
      * @return Path to the output file
      */
-    public Path compress(String sourcePath, String destinationPath, String outputFileBaseName) {
+    public synchronized Path compress(String sourcePath, String destinationPath, String outputFileBaseName) {
         try {
             File sourceFile = new File(sourcePath);
             // TODO: If destination path does not exist, but is a directory, create the path
@@ -163,6 +167,16 @@ public class TarLz4Compressor {
         } catch (Exception e) {
             log.error("Could not lz4 compress source=[" + sourcePath + "] to destination=[" + destinationPath + "]", e);
             throw new RuntimeException(e);
+        } finally {
+            for (int i = 0; i < resourcesCreated.size(); i++) {
+                String tmpFileName = resourcesCreated.get(i);
+                try {
+                    Files.deleteIfExists(Path.of(tmpFileName));
+                } catch (IOException e) {
+                    log.error("Failed to delete .tmp file at " + tmpFileName, e);
+                }
+            }
+            resourcesCreated.clear();
         }
     }
     
@@ -197,7 +211,8 @@ public class TarLz4Compressor {
                 // Each Runnable task will be outputting to a temporary file, which is the same name as the output file except
                 // suffixed with "_sliceNum.tmp"
                 // TODO: Make this randomly generated string and validate it doesn't already exist
-                FileOutputStream tmpOutputFile = new FileOutputStream(destinationPath + "_" + i + TMP_SUFFIX);
+                String tmpFilePath = destinationPath + "_" + i + TMP_SUFFIX;
+                FileOutputStream tmpOutputFile = new FileOutputStream(tmpFilePath);
 
                 TarLz4CompressTask runnable = new TarLz4CompressTask(sourcePath, destinationPath, start, end, i, numThreads,
                         bufferSize, totalBytes, false, logProgressPercentInterval, verbosity, excludeFiles, tmpOutputFile);
@@ -205,6 +220,8 @@ public class TarLz4Compressor {
                 // Save a reference to each Thread Future, and the Runnable, so we can properly close() or clean them up later
                 futures[i] = executorService.submit(runnable);
                 tasks[i] = runnable;
+                
+                resourcesCreated.add(tmpFilePath);
             }
 
             // Logging progress for multithreaded case, also waits for future to finish
@@ -298,7 +315,6 @@ public class TarLz4Compressor {
                     // final output file
                     tmpChannel.close();
                     tmpFiles[finalI].close();
-                    Files.deleteIfExists(Path.of(tmpFilePath));
                     log.debug("Finished writing output region for slice {}", finalI);
                 } catch (Exception e) {
                     throw new RuntimeException(e);
