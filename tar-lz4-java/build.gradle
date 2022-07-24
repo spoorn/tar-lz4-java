@@ -13,14 +13,14 @@ repositories {
 dependencies {
 
     //include("org.lz4:lz4-java:${project.lz4_version}")
-    api("org.lz4:lz4-java:${project.lz4_version}")
+    implementation("org.lz4:lz4-java:${project.lz4_version}")
 
     //include("org.apache.commons:commons-compress:${project.commons_compress_version}")
-    api("org.apache.commons:commons-compress:${project.commons_compress_version}")
-    api("commons-io:commons-io:${project.commons_io_version}")
+    implementation("org.apache.commons:commons-compress:${project.commons_compress_version}")
+    implementation("commons-io:commons-io:${project.commons_io_version}")
 
-    api 'org.apache.logging.log4j:log4j-api:2.18.0'
-    api 'org.apache.logging.log4j:log4j-core:2.18.0'
+    implementation 'org.apache.logging.log4j:log4j-api:2.18.0'
+    implementation 'org.apache.logging.log4j:log4j-core:2.18.0'
 
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
