@@ -46,6 +46,27 @@ _or_
 
 You can find the `<version>` under [Releases](https://github.com/spoorn/tar-lz4-java/releases)
 
+#### Minimal JAR vs shadowJAR
+
+The default JAR that will be picked up is a fat shadowJar.  This bundles the entire JAR into one cohesive file such that transitive dependencies do not cause dependency conflicts or cannot be found during runtime (ClassNotFoundException).  To use the minimal JAR without shadowJar, specify the classifier as 'min':
+
+__build.gradle:__
+
+```
+implementation("com.github.spoorn:tar-lz4-java:<version>:min")
+```
+
+__maven:__
+```
+<dependency>
+    <groupId>com.github.spoorn</groupId>
+    <artifactId>tar-lz4-java</artifactId>
+    <version>see Releases page for version</version>
+    <classifier>min</classifier>
+</dependency>
+```
+
+
 ---
 
 ### If you are using Java9+ Modules
