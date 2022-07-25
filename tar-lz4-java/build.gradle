@@ -42,7 +42,6 @@ tasks.build.dependsOn tasks.shadowJar
 shadowJar {
     relocate 'org.apache.commons', 'org.spoorn.org.apache.commons'
     relocate 'net.jpountz', 'org.spoorn.net.jpountz'
-    minimize()
 }
 
 artifacts {
