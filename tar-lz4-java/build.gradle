@@ -1,6 +1,8 @@
 plugins {
     id 'java-library'
     id 'maven-publish'
+    // Shadow jar so consumers can pick up transitive dependencies without conflicts
+    id 'com.github.johnrengelman.shadow' version '7.1.2'
     id "io.freefair.lombok" version "6.5.0.3"
 }
 
@@ -32,6 +34,15 @@ tasks.named('jar') {
         attributes('Implementation-Title': project.name,
                 'Implementation-Version': project.version)
     }
+}
+
+// Make build run shadowJar
+tasks.build.dependsOn tasks.shadowJar
+
+shadowJar {
+    relocate 'org.apache.commons', 'org.spoorn.org.apache.commons'
+    relocate 'net.jpountz', 'org.spoorn.net.jpountz'
+    minimize()
 }
 
 java {
