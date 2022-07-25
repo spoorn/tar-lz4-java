@@ -36,12 +36,20 @@ tasks.named('jar') {
     }
 }
 
+jar {
+    archiveClassifier = 'min'
+}
+
 // Make build run shadowJar
 tasks.build.dependsOn tasks.shadowJar
 
 shadowJar {
     relocate 'org.apache.commons', 'org.spoorn.org.apache.commons'
     relocate 'net.jpountz', 'org.spoorn.net.jpountz'
+    minimize {
+        exclude(dependency('org.lz4:.*:.*'))
+    }
+    archiveClassifier = null
 }
 
 artifacts {
