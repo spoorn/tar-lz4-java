@@ -35,7 +35,6 @@ tasks.named('jar') {
 
 java {
     withSourcesJar()
-    withJavadocJar()
 }
 
 //def targetJavaVersion = 17
