@@ -54,6 +54,7 @@ shadowJar {
     }
     minimize {
         exclude(dependency('org.lz4:.*:.*'))
+        exclude(dependency('org.apache.logging.log4j:.*:.*'))
     }
     archiveClassifier = null
 }
