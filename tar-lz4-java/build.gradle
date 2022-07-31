@@ -30,9 +30,12 @@ dependencies {
 }
 
 tasks.named('jar') {
+    // Set Multi-Release to 'true' for https://github.com/johnrengelman/shadow/issues/449
+    // and https://stackoverflow.com/questions/52953483/logmanager-getlogger-is-unable-to-determine-class-name-on-java-11
     manifest {
         attributes('Implementation-Title': project.name,
-                'Implementation-Version': project.version)
+                'Implementation-Version': project.version,
+                'Multi-Release': 'true')
     }
 }
 
