@@ -52,6 +52,7 @@ shadowJar {
     relocate 'org.apache.logging.log4j', 'org.spoorn.org.apache.logging.log4j'
     minimize {
         exclude(dependency('org.lz4:.*:.*'))
+        exclude(dependency('org.apache.logging.log4j:.*:.*'))
     }
     archiveClassifier = null
 }
