@@ -51,7 +51,6 @@ shadowJar {
     relocate 'net.jpountz', 'org.spoorn.net.jpountz'
     minimize {
         exclude(dependency('org.lz4:.*:.*'))
-        exclude(dependency('org.apache.logging.log4j:.*:.*'))
     }
     archiveClassifier = null
 }
