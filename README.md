@@ -132,6 +132,10 @@ decompressor.decompress(sourcePath, destinationPath);
 
 Note: `sourcePath` should be the full path to a `.tar.lz4` file.  `destinationPath` should be the path to a directory where the decompressed extracted files will be outputed to.
 
+## Logging
+`tar-lz4-java` uses Log4j2 for logging.  You will need a [Log4j2 configuration file](https://logging.apache.org/log4j/2.x/manual/configuration.html)
+to properly see logs in console, log file, etc.  Here's an example log4j2 config file I have to log to console for tests: https://github.com/spoorn/tar-lz4-java/blob/main/tar-lz4-java/src/test/resources/log4j2-test.xml.
+
 ## Shared
 
 Various configurations are common between the compressor/decompressor.  All should be documented fully in the javadoc which is the official reference and source of truth for documentation.
